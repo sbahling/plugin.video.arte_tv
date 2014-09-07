@@ -215,7 +215,7 @@ def playVideoNew(url):
 
 def getStreamUrlNew(url):
     content = getUrl(url)
-    match = re.compile('arte_vp_url="(.+?)"', re.DOTALL).findall(content)
+    match = re.compile('arte_vp_url=[\'"](.+?)[\'"]', re.DOTALL).findall(content)
     if "concert.arte.tv" in url:
         url = match[0]
         content = getUrl(url)
