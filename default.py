@@ -83,7 +83,7 @@ def listVideosNew(url):
         rank = str_item(item.get("video_rank", ""))
 
         desc = views+"   |   "+date+"\n"+channels+"\n"+desc
-        addLink(cleanTitle(title),
+        addLink(title,
                 baseUrl+url,
                 'playVideoNew',
                 thumb,
@@ -103,11 +103,11 @@ def listSearchVideos(urlMain):
         for i in range(1, len(spl), 1):
             entry = spl[i]
             match = re.compile('alt="(.+?)"', re.DOTALL).findall(entry)
-            title = cleanTitle(match[0])
+            title = match[0]
             match = re.compile('data-description="(.+?)"', re.DOTALL).findall(entry)
             desc = ""
             if match:
-                desc = cleanTitle(match[0])
+                desc = match[0]
             match = re.compile('<p class="time-row">.+?<span class=".+?">.+?</span>(.+?)</p>.+?<p class=".+?">.+?<span class=".+?">.+?</span>(.+?)</p>', re.DOTALL).findall(entry)
             if match:
                 date = match[0][0].strip()
@@ -135,7 +135,7 @@ def listCats(type, regionFilter):
     content = content[:content.find('</ul>')]
     match = re.compile('<a href="(.+?)" data-controller="catchup" data-action="refresh" >(.+?)</a>', re.DOTALL).findall(content)
     for url, title in match:
-        title = cleanTitle(title)
+        title = title
         url = baseUrl+url.replace("?", ".json?").replace("&amp;", "&")+"&regions="+regionFilter
         addDir(title, url, 'listVideosNew', "")
     xbmcplugin.endOfDirectory(pluginhandle)
@@ -187,7 +187,7 @@ def listConcerts(url=""):
     for i in range(1, len(spl), 1):
         entry = spl[i]
         match = re.compile('title="(.+?)"', re.DOTALL).findall(entry)
-        title = cleanTitle(match[0])
+        title = match[0]
         match = re.compile('href="(.+?)"', re.DOTALL).findall(entry)
         url = baseUrlConcert+match[0]
         match = re.compile('src="(.+?)"', re.DOTALL).findall(entry)
