@@ -53,50 +53,43 @@ def index():
     xbmcplugin.endOfDirectory(pluginhandle)
 
 
+
+def str_item(item):
+    '''Convert item to utf-8 encoded string object''' 
+    if not item:
+        item = ''
+    if not isinstance(item, basestring):
+        try:
+            item = str(item)
+        except:
+            item = ''
+    return item.encode('utf-8', 'replace')
+
+
 def listVideosNew(url):
     xbmcplugin.setContent(pluginhandle, "episodes")
     content = getUrl(url)
     content = json.loads(content)
     for item in content["videos"]:
-        title = item["title"].encode('utf-8')
-        try:
-            desc = item["desc"].encode('utf-8')
-        except:
-            desc = ""
-        try:
-            duration = str(item["duration"])
-        except:
-            duration = ""
-        try:
-            date = item["airdate_long"].encode('utf-8')
-        except:
-            date = ""
-        try:
-            url = item["url"]
-        except:
-            url = ""
-        try:
-            thumb = item["image_url"]
-        except:
-            thumb = ""
-        try:
-            channels = item["video_channels"].encode('utf-8')
-        except:
-            channels = ""
-        try:
-            views = str(item["video_views"])
-        except:
-            views = ""
-        try:
-            until = item["video_rights_until"].encode('utf-8')
-        except:
-            until = ""
-        try:
-            rank = str(item["video_rank"])
-        except:
-            rank = ""
+        title = str_item(item.get("title", "No Title"))
+        desc = str_item(item.get("desc", ""))
+        duration = str_item(item.get("duration", ""))
+        date = str_item(item.get("airdate_long", ""))
+        url = str_item(item.get("url", ""))
+        thumb = str_item(item.get("image_url", ""))
+        channels = str_item(item.get("video_channels", ""))
+        views = str_item(item.get("video_views", ""))
+        until = str_item(item.get("video_rights_until", ""))
+        rank = str_item(item.get("video_rank", ""))
+
         desc = views+"   |   "+date+"\n"+channels+"\n"+desc
-        addLink(cleanTitle(title), baseUrl+url, 'playVideoNew', thumb, desc, duration)
+        addLink(cleanTitle(title),
+                baseUrl+url,
+                'playVideoNew',
+                thumb,
+                desc,
+                duration,
+                )
     xbmcplugin.endOfDirectory(pluginhandle)
     if forceViewMode:
         xbmc.executebuiltin('Container.SetViewMode('+viewMode+')')
