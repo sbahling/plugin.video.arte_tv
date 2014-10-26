@@ -5,14 +5,13 @@ import urllib2
 import socket
 import sys
 import re
-import os
 import json
 import xbmcplugin
 import xbmcaddon
 import xbmcgui
 
-#addon = xbmcaddon.Addon()
-#addonID = addon.getAddonInfo('id')
+# addon = xbmcaddon.Addon()
+# addonID = addon.getAddonInfo('id')
 addonID = "plugin.video.arte_tv"
 addon = xbmcaddon.Addon(id=addonID)
 socket.setdefaulttimeout(30)
