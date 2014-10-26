@@ -29,32 +29,49 @@ maxVideoQuality = ["480p", "720p"][int(maxVideoQuality)]
 streamingType = addon.getSetting("streamingType")
 streamingType = ["HTTP", "RTMP"][int(streamingType)]
 
+guide = '%s/guide/%s' % (baseUrl, language)
+new_json = 'plus7.json'
+selection_json = 'plus7/selection.json'
+lastchance_json = 'plus7/derniere_chance.json'
+mostviewed_json = 'plus7/plus_vues.json'
+
+
+def jsonUrl(jsonfile, regions=''):
+    url = '%s/%s' % (guide, jsonfile)
+    if regions:
+        url = '%s?regions=%s' % (url, regions)
+    return url
+
 
 def index():
     content = getUrl(baseUrl+"/artews/js/geolocation.js")
-    match = re.compile('arte_geoip_zone_codes.+?return new Array\\((.+?)\\)', re.DOTALL).findall(content)
+    match = re.compile('arte_geoip_zone_codes.+?return new Array\\((.+?)\\)',
+                       re.DOTALL).findall(content)
     regionFilters = match[0].split(",")
     regionFilter = ""
     for filter in regionFilters:
-        regionFilter += filter.replace("'","").strip()+"%2C"
+        regionFilter += filter.replace("'", "").strip()+"%2C"
     regionFilter = regionFilter[:-3]
-    addDir(translation(30001), baseUrl+"/guide/"+language+"/plus7.json", "listVideosNew", "")
-    addDir(translation(30002), baseUrl+"/guide/"+language+"/plus7/selection.json?regions="+regionFilter, "listVideosNew", "")
-    addDir(translation(30003), baseUrl+"/guide/"+language+"/plus7/plus_vues.json?regions="+regionFilter, "listVideosNew", "")
-    addDir(translation(30004), baseUrl+"/guide/"+language+"/plus7/derniere_chance.json?regions="+regionFilter, "listVideosNew", "")
+    addDir(translation(30001), jsonUrl(new_json),
+           "listVideosNew", "")
+    addDir(translation(30002), jsonUrl(selection_json, regionFilter),
+           "listVideosNew", "")
+    addDir(translation(30003), jsonUrl(lastchance_json, regionFilter),
+           "listVideosNew", "")
+    addDir(translation(30004), jsonUrl(mostviewed_json, regionFilter),
+           "listVideosNew", "")
     addDir(translation(30005), "by_channel", "listCats", "", regionFilter)
     addDir(translation(30006), "by_cluster", "listCats", "", regionFilter)
     addDir(translation(30007), "by_date", "listCats", "", regionFilter)
     addDir(translation(30008), "", "search", "")
     addDir(translation(30012), "", "listConcertsMain", "")
-    if regionFilter!="ALL":
+    if regionFilter != "ALL":
         addLink(translation(30009), "", "playLiveStream", icon)
     xbmcplugin.endOfDirectory(pluginhandle)
 
 
-
 def str_item(item):
-    '''Convert item to utf-8 encoded string object''' 
+    '''Convert item to utf-8 encoded string object'''
     if not item:
         item = ''
     if not isinstance(item, basestring):
