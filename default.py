@@ -103,7 +103,7 @@ def listVideosNew(url):
 
         desc = views+"   |   "+date+"\n"+channels+"\n"+desc
         addLink(title,
-                baseUrl+url,
+                url,
                 'playVideoNew',
                 thumb,
                 desc,
