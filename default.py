@@ -251,42 +251,61 @@ def playVideoNew(url):
     xbmcplugin.setResolvedUrl(pluginhandle, True, listitem)
 
 
+def getBestStream(VSR):
+    '''Return the best quality stream from an arte VSR json structure.
+    Try preferred streamingType first and fall back to other type.
+    '''
+
+    vid_format_tmpl = u'{streamtype}_{qual}_{lang}'
+    lang_code = {'de': '1', 'fr': '2'}
+
+    if maxVideoQuality == '720p':
+        quals = ['SQ', 'HQ', 'EQ', 'MQ']
+    else:
+        quals = ['EQ', 'MQ']
+
+    # Videos use HTTP_MP4 concerts use HTTP. We always try both.
+    streamtypes = {'RTMP': ['RMTP', 'HTTP_MP4', 'HTTP'],
+                   'HTTP': ['HTTP_MP4', 'HTTP', 'RMTP'],
+                   }
+
+    lang = lang_code.get(language.lower(), 'de')
+    for streamtype in streamtypes[streamingType]:
+        streamUrl = None
+        for qual in quals:
+            vid_format = vid_format_tmpl.format(streamtype=streamtype,
+                                                qual=qual,
+                                                lang=lang,
+                                                )
+            try:
+                streamUrl = VSR[vid_format]['url']
+                streamer = VSR[vid_format].get('streamer', '')
+                if streamer:
+                    streamUrl = '%s/%s' % (streamer, streamUrl)
+                break
+            except:
+                pass
+
+        if streamUrl is not None:
+            break
+
+    return streamUrl
+
+
 def getStreamUrlNew(url):
     content = getUrl(url)
-    match = re.compile('arte_vp_url=[\'"](.+?)[\'"]', re.DOTALL).findall(content)
-    if "concert.arte.tv" in url:
-        url = match[0]
-        content = getUrl(url)
-        match1 = re.compile('"HTTP_SQ_1":.+?"url":"(.+?)"', re.DOTALL).findall(content)
-        match2 = re.compile('"HTTP_EQ_1":.+?"url":"(.+?)"', re.DOTALL).findall(content)
-        match3 = re.compile('"RMTP_HQ":.*?"streamer":"(.+?)","url":"(.+?)"', re.DOTALL).findall(content)
-        if match1 and maxVideoQuality == "720p":
-            return match1[0].replace("\\","")
-        elif match2:
-            return match2[0].replace("\\","")
-        elif match3:
-            return match3[0][0].replace("\\","")+match3[0][1].replace("\\","")+" swfUrl=http://www.arte.tv/flash/mediaplayer/mediaplayer.swf live=1 swfVfy=1"
-    elif streamingType=="HTTP":
-        url = match[0].replace("/player/","/")
-        content = getUrl(url)
-        match1 = re.compile('"HBBTV","VQU":"SQ","VMT":"mp4","VUR":"(.+?)"', re.DOTALL).findall(content)
-        match2 = re.compile('"HBBTV","VQU":"EQ","VMT":"mp4","VUR":"(.+?)"', re.DOTALL).findall(content)
-        if match1 and maxVideoQuality == "720p":
-            return match1[0]
-        elif match2:
-            return match2[0]
-    elif streamingType=="RTMP":
-        url = match[0]
-        content = getUrl(url)
-        match1 = re.compile('"RTMP_SQ_1":.+?"streamer":"(.+?)","url":"(.+?)"', re.DOTALL).findall(content)
-        match2 = re.compile('"RTMP_MQ_1":.+?"streamer":"(.+?)","url":"(.+?)"', re.DOTALL).findall(content)
-        if match1 and maxVideoQuality == "720p":
-            base = match1[0][0]
-            playpath = match1[0][1]
-        elif match2:
-            base = match2[0][0]
-            playpath = match2[0][1]
-        return base+" playpath=mp4:"+playpath
+    vp_url_re = 'arte_vp_url=[\'"](.+?)[\'"]'
+    match = re.compile(vp_url_re, re.DOTALL).findall(content)
+
+    url = match[0]
+    content = getUrl(url)
+    content = json.loads(content)
+
+    VSR = content['videoJsonPlayer']['VSR']
+
+    url = getBestStream(VSR)
+
+    return url
 
 
 def queueVideo(url, name):
