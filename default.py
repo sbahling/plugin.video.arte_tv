@@ -19,6 +19,8 @@ pluginhandle = int(sys.argv[1])
 forceViewMode = addon.getSetting("forceView") == "true"
 useThumbAsFanart = addon.getSetting("useThumbAsFanart") == "true"
 viewMode = str(addon.getSetting("viewIDNew"))
+addonDir = xbmc.translatePath(addon.getAddonInfo('path'))
+defaultFanart = os.path.join(addonDir ,'fanart.png')
 icon = xbmc.translatePath('special://home/addons/'+addonID+'/icon.png')
 baseUrl = "http://www.arte.tv"
 baseUrlConcert = "http://concert.arte.tv"
@@ -173,7 +175,7 @@ def search():
 
 def listConcertsMain():
     addDir(translation(30002), "", "listConcerts", "")
-    addDir(translation(30003), baseUrlConcert+"/"+language+"/videos/all?sort=mostviewed", "listConcerts", "")
+    addDir("Collections", "", "listCollections", "")
     addDir(translation(30011), baseUrlConcert+"/"+language+"/videos/all", "listConcerts", "")
     addDir(translation(30013), baseUrlConcert+"/"+language+"/videos/rockpop", "listConcerts", "")
     if language=="de":
@@ -208,10 +210,36 @@ def listConcerts(url=""):
         url = baseUrlConcert+match[0]
         match = re.compile('src="(.+?)"', re.DOTALL).findall(entry)
         thumb = match[0].replace("/alw_rectangle_376/","/alw_rectangle_690/").replace("/alw_highlight_480/","/alw_rectangle_690/")
-        addLink(title, url, 'playVideoNew', thumb, "")
+        if "node-eventp" in entry:
+            addDir(title, url, "listConcerts", thumb)
+        elif "node-videop" in entry:
+            addLink(title, url, 'playVideoNew', thumb, "")
     match = re.compile('<li class="pager-next">.+?href="(.+?)"', re.DOTALL).findall(content)
     if match:
         addDir(translation(30010), baseUrlConcert+match[0], "listConcerts", "")
+    xbmcplugin.endOfDirectory(pluginhandle)
+    if forceViewMode:
+        xbmc.executebuiltin('Container.SetViewMode('+viewMode+')')
+
+
+def listCollections():
+    content = getUrl("http://concert.arte.tv/"+language+"/collections.xml")
+    spl = content.split('<item>')
+    for i in range(1, len(spl), 1):
+        entry = spl[i]
+        match = re.compile('<title>(.+?)</title>', re.DOTALL).findall(entry)
+        title = cleanTitle(match[0])
+        match = re.compile('field-name-eventp-videos-count.*?&gt;(.+?)&lt;', re.DOTALL).findall(entry)
+        if match:
+            count = match[0].strip()
+            if language=="de":
+                count = count.replace("vidéos","Videos")
+            title += " ("+count+")"
+        match = re.compile('<link>(.+?)</link>', re.DOTALL).findall(entry)
+        url = match[0]
+        match = re.compile('data-src=&quot;(.+?)&quot;', re.DOTALL).findall(entry)
+        thumb = match[0].replace("/alw_rectangle_376/","/alw_rectangle_690/").replace("/alw_highlight_480/","/alw_rectangle_690/")
+        addDir(title, url, "listConcerts", thumb)
     xbmcplugin.endOfDirectory(pluginhandle)
     if forceViewMode:
         xbmc.executebuiltin('Container.SetViewMode('+viewMode+')')
@@ -230,10 +258,13 @@ def getStreamUrlNew(url):
         content = getUrl(url)
         match1 = re.compile('"HTTP_SQ_1":.+?"url":"(.+?)"', re.DOTALL).findall(content)
         match2 = re.compile('"HTTP_EQ_1":.+?"url":"(.+?)"', re.DOTALL).findall(content)
+        match3 = re.compile('"RMTP_HQ":.*?"streamer":"(.+?)","url":"(.+?)"', re.DOTALL).findall(content)
         if match1 and maxVideoQuality == "720p":
             return match1[0].replace("\\","")
         elif match2:
             return match2[0].replace("\\","")
+        elif match3:
+            return match3[0][0].replace("\\","")+match3[0][1].replace("\\","")+" swfUrl=http://www.arte.tv/flash/mediaplayer/mediaplayer.swf live=1 swfVfy=1"
     elif streamingType=="HTTP":
         url = match[0].replace("/player/","/")
         content = getUrl(url)
@@ -315,6 +346,8 @@ def addLink(name, url, mode, iconimage, desc="", duration=""):
     liz.setProperty('IsPlayable', 'true')
     if useThumbAsFanart and iconimage!=icon:
         liz.setProperty("fanart_image", iconimage)
+    else:
+        liz.setProperty("fanart_image", defaultFanart)
     liz.addContextMenuItems([(translation(30020), 'RunPlugin(plugin://'+addonID+'/?mode=queueVideo&url='+urllib.quote_plus(u)+'&name='+urllib.quote_plus(name)+')',)])
     ok = xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz)
     return ok
@@ -325,6 +358,10 @@ def addDir(name, url, mode, iconimage, regionFilter=""):
     ok = True
     liz = xbmcgui.ListItem(name, iconImage=icon, thumbnailImage=iconimage)
     liz.setInfo(type="Video", infoLabels={"Title": name})
+    if useThumbAsFanart and iconimage and iconimage!=icon:
+        liz.setProperty("fanart_image", iconimage)
+    else:
+        liz.setProperty("fanart_image", defaultFanart)
     ok = xbmcplugin.addDirectoryItem(handle=int(sys.argv[1]), url=u, listitem=liz, isFolder=True)
     return ok
 
@@ -350,6 +387,8 @@ elif mode == 'playLiveStream':
     playLiveStream()
 elif mode == 'listConcerts':
     listConcerts(url)
+elif mode == 'listCollections':
+    listCollections()
 elif mode == 'listConcertsMain':
     listConcertsMain()
 elif mode == 'search':
